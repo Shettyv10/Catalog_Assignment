@@ -1,0 +1,59 @@
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <vector>
+#include <json/json.h>
+
+long long decodeValue(const std::string& value, int base) {
+    long long result = 0;
+    for (char c : value) {
+        result = result * base + (isdigit(c) ? c - '0' : c - 'a' + 10);
+    }
+    return result;
+}
+
+long long lagrangeInterpolation(const std::vector<std::pair<int, long long>>& points) {
+    long long result = 0;
+    for (size_t i = 0; i < points.size(); ++i) {
+        long long term = points[i].second;
+        for (size_t j = 0; j < points.size(); ++j) {
+            if (i != j) {
+                term *= -points[j].first;
+                term /= (points[i].first - points[j].first);
+            }
+        }
+        result += term;
+    }
+    return result;
+}
+
+std::vector<std::pair<int, long long>> parseJSON(const std::string& filename, int& k) {
+    std::ifstream file(filename);
+    Json::Value data;
+    file >> data;
+    k = data["keys"]["k"].asInt();
+
+    std::vector<std::pair<int, long long>> points;
+    for (const auto& key : data.getMemberNames()) {
+        if (key != "keys") {
+            int x = std::stoi(key);
+            int base = data[key]["base"].asInt();
+            long long y = decodeValue(data[key]["value"].asString(), base);
+            points.emplace_back(x, y);
+        }
+    }
+    points.resize(k);  
+    return points;
+}
+
+void findSecret(const std::string& filename) {
+    int k;
+    auto points = parseJSON(filename, k);
+    std::cout << "Secret for " << filename << ": " << lagrangeInterpolation(points) << std::endl;
+}
+
+int main() {
+    findSecret("testcase1.json");
+    findSecret("testcase2.json");
+    return 0;
+}
